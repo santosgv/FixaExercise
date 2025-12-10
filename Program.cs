@@ -50,8 +50,13 @@ public class ContaBancaria
 
 public class Produtos
 {
-    public required string Nome { get; set; }
+    public string Nome { get; set; }
     public decimal Preco { get; set; }
+
+    public Produtos( string nome, decimal preco) {
+        Nome = nome;
+        Preco = preco; 
+    }
 
     public decimal CalcularDescontos(decimal percentualDesconto) { 
         if(percentualDesconto < 0 || percentualDesconto > 100)
@@ -60,6 +65,15 @@ public class Produtos
         }
         return Preco - (Preco * percentualDesconto / 100);
     }
+
+    public static decimal CalculaTotal(List<Produtos> produtos) {
+        decimal total = 0;
+        foreach(var produto in produtos) {
+            total += produto.Preco;
+        }
+        return total;
+    }
+
 }
 public class Program
 {
@@ -77,8 +91,32 @@ public class Program
         //conta.Sacar(500);
         //Console.WriteLine(conta.Saldo); 
 
-        //Produtos produto = new Produtos { Nome = "Notebook", Preco = 1000 };
-        //decimal precoComDesconto = produto.CalcularDescontos(15);
-        //System.Console.WriteLine($"O preco do {produto.Nome} com desconto e: {precoComDesconto}");
+        //Produtos produto1 = new Produtos("Notebook", 5000);
+
+        //decimal precoComDesconto = produto1.CalcularDescontos(15);
+        //System.Console.WriteLine($"O preco do {produto1.Nome} com desconto e: {precoComDesconto}");
+
+        List<Produtos> listaCompras = new List<Produtos>();
+
+        listaCompras.Add(new Produtos("Notebook", 5000));
+        listaCompras.Add(new Produtos("Mouse", 150));
+        listaCompras.Add(new Produtos("Teclado", 350));
+        listaCompras.Add(new Produtos("Monitor", 1200));
+
+        // Calculando o total usando o método estático da classe Produto
+        decimal totalCompra = Produtos.CalculaTotal(listaCompras);
+        Console.WriteLine($"Total da compra: {totalCompra:C}");
+
+        // OU usando LINQ (mais moderno)
+        decimal totalComLinq = listaCompras.Sum(p => p.Preco);
+        Console.WriteLine($"Total com LINQ: {totalComLinq:C}");
+
+        // Exibindo todos os produtos
+        Console.WriteLine("\nLista de Produtos:");
+        foreach (var produto in listaCompras)
+        {
+            Console.WriteLine($"- {produto.Nome}: {produto.Preco:C}");
+        }
+
     }
 }
