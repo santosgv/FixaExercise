@@ -396,6 +396,8 @@ public class Program
         #endregion
         #region Sistema de Pedidos
         //Cliente cliente = new Cliente("Vitor", "email@email");
+        //Cliente cliente1 = new Cliente("Gabriel", "email@email");
+        //Cliente cliente2 = new Cliente("Silva", "email@email");
 
         //Produto produto = new Produto("pizza", 50);
         //Produto produto1 = new Produto("Coca-cola", 10);
@@ -406,6 +408,29 @@ public class Program
         //Pedido pedido = new Pedido(cliente);
         //pedido.Itens.Add(item1);
         //pedido.Itens.Add(item2);
+
+        //Pedido pedido2 = new Pedido(cliente1);
+        //Pedido pedido3 = new Pedido(cliente2);
+        //pedido2.Itens.Add(new ItemPedido(new Produto("Hamburguer", 30), 3));   
+        //pedido3.Itens.Add(new ItemPedido(new Produto("Batata Frita", 20), 1));
+
+
+        //var pedidos = new List<Pedido> { pedido, pedido2, pedido3 };
+        //foreach(var p in pedidos) {
+        //    Console.WriteLine($"Pedido do cliente: {p.Cliente.Nome}");
+        //    Console.WriteLine("Itens do Pedido:");
+        //    foreach(var item in p.Itens) {
+        //        Console.WriteLine($" - {item.Quantidade}x {item.Produto.Nome} - R$ {item.Produto.Preco} total.: {item.CalcularSubtotal()}");
+        //    }
+        //}
+
+        //string clienteNome = "Vitor";
+        //var pedidoCliente = pedidos.Where(p => p.Cliente.Nome == clienteNome).FirstOrDefault();
+        //Console.Write($"\nDetalhes do pedido do cliente {clienteNome}:\n");
+        //Console.Write($"Itens do Pedido:\n");
+        //foreach(var item in pedidoCliente.Itens) {
+        //    Console.Write($" - {item.Quantidade}x {item.Produto.Nome} - R$ {item.Produto.Preco} total.: {item.CalcularSubtotal()}\n");
+        //}
 
         //Console.Write($"Pedido do cliente: {pedido.Cliente.Nome}\nItens do Pedido:\n");
         //Console.Write($" - {item1.Quantidade}x {item1.Produto.Nome} - R$ {item1.Produto.Preco}\n");
