@@ -366,6 +366,7 @@ public class Item : Entity
         return $"Produto [ID: {Id}, Nome: {Nome}, Preço: R${Preco:F2}, Estoque: {Estoque}]";
     }
 }
+
 public class InMemoryRepository<T> : IRepository<T> where T : Entity
 {
     // Dicionário em memória (similar a usar um dict como banco temporário)
