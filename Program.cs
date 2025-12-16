@@ -287,6 +287,226 @@ public class Produto
 
 }
 
+
+// Interface genérica (T = Tipo/Classe que será gerenciada)
+public interface IRepository<T> where T : class
+{
+    // Similar ao .create() do Django ORM
+    void Add(T entity);
+
+    // Similar ao .get(id=id) do Django
+    T Get(int id);
+
+    // Similar ao .all() do Django
+    IEnumerable<T> GetAll();
+
+    // Similar ao .delete() do Django
+    void Delete(int id);
+
+    // Bônus: métodos úteis que temos no Django
+    void Update(T entity);
+    bool Exists(int id);
+    int Count();
+}
+
+// Classe base para todas as entidades (similar ao models.Model)
+public abstract class Entity
+{
+    public int Id { get; protected set; } // Similar ao 'id' autoincrement do Django
+
+    // Método para definir ID (normalmente o repositório faz isso)
+    public void SetId(int id)
+    {
+        if (id <= 0)
+            throw new ArgumentException("ID deve ser maior que zero");
+        Id = id;
+    }
+
+    // Método para comparar entidades (similar ao __eq__ do Django)
+    public override bool Equals(object obj)
+    {
+        if (obj is Entity other)
+            return Id == other.Id;
+        return false;
+    }
+
+    public override int GetHashCode()
+    {
+        return Id.GetHashCode();
+    }
+}
+
+// Similar a class Produto(models.Model) no Django
+public class Item : Entity
+{
+    public string Nome { get; set; }
+    public decimal Preco { get; set; }
+    public int Estoque { get; set; }
+
+    // Construtor
+    public Item(string nome, decimal preco, int estoque)
+    {
+        Nome = nome ?? throw new ArgumentNullException(nameof(nome));
+        Preco = preco;
+        Estoque = estoque;
+    }
+
+    // Método de negócio
+    public void AplicarDesconto(decimal percentual)
+    {
+        if (percentual < 0 || percentual > 100)
+            throw new ArgumentException("Percentual deve estar entre 0 e 100");
+
+        Preco -= Preco * percentual / 100;
+    }
+
+    // Override do ToString para exibição
+    public override string ToString()
+    {
+        return $"Produto [ID: {Id}, Nome: {Nome}, Preço: R${Preco:F2}, Estoque: {Estoque}]";
+    }
+}
+public class InMemoryRepository<T> : IRepository<T> where T : Entity
+{
+    // Dicionário em memória (similar a usar um dict como banco temporário)
+    private readonly Dictionary<int, T> _database = new Dictionary<int, T>();
+    private int _nextId = 1; // Contador para IDs
+
+    // Similar ao .create() do Django ORM
+    public void Add(T entity)
+    {
+        if (entity == null)
+            throw new ArgumentNullException(nameof(entity));
+
+        // Atribui um ID automático (como o auto-increment do Django)
+        entity.SetId(_nextId++);
+
+        // Adiciona ao "banco em memória"
+        _database[entity.Id] = entity;
+
+        Console.WriteLine($"✅ {typeof(T).Name} adicionado com ID: {entity.Id}");
+    }
+
+    // Similar ao .get(id=id) - pode lançar exceção se não encontrar
+    public T Get(int id)
+    {
+        if (!_database.TryGetValue(id, out T entity))
+            throw new KeyNotFoundException($"{typeof(T).Name} com ID {id} não encontrado");
+
+        return entity;
+    }
+
+    // Similar ao .get(id=id) mas retorna null em vez de exceção
+    public T GetOrDefault(int id)
+    {
+        _database.TryGetValue(id, out T entity);
+        return entity;
+    }
+
+    // Similar ao .all() do Django
+    public IEnumerable<T> GetAll()
+    {
+        return _database.Values;
+    }
+
+    // Similar ao .delete() do Django
+    public void Delete(int id)
+    {
+        if (!_database.ContainsKey(id))
+            throw new KeyNotFoundException($"{typeof(T).Name} com ID {id} não encontrado");
+
+        _database.Remove(id);
+        Console.WriteLine($"🗑️ {typeof(T).Name} com ID {id} removido");
+    }
+
+    // Similar ao .save() do Django (mas aqui é Update separado)
+    public void Update(T entity)
+    {
+        if (entity == null)
+            throw new ArgumentNullException(nameof(entity));
+
+        if (!_database.ContainsKey(entity.Id))
+            throw new KeyNotFoundException($"{typeof(T).Name} com ID {entity.Id} não encontrado");
+
+        _database[entity.Id] = entity;
+        Console.WriteLine($"✏️ {typeof(T).Name} com ID {entity.Id} atualizado");
+    }
+
+    // Similar ao .exists() do Django QuerySet
+    public bool Exists(int id)
+    {
+        return _database.ContainsKey(id);
+    }
+
+    // Similar ao .count() do Django QuerySet
+    public int Count()
+    {
+        return _database.Count;
+    }
+
+    // Método adicional: buscar por condição (similar ao .filter() do Django)
+    public IEnumerable<T> Find(Func<T, bool> predicate)
+    {
+        return _database.Values.Where(predicate);
+    }
+}
+
+// Camada de serviço que usa o repositório (similar a services no Django)
+public class ItemService
+{
+    private readonly IRepository<Item> _repository;
+
+    // Injeção de dependência do repositório
+    public ItemService(IRepository<Item> repository)
+    {
+        _repository = repository;
+    }
+
+    // Métodos de negócio
+    public void CadastrarProduto(string nome, decimal preco, int estoque)
+    {
+        var item = new Item(nome, preco, estoque);
+        _repository.Add(item);
+    }
+
+    public Item BuscarPorId(int id)
+    {
+        return _repository.Get(id);
+    }
+
+    public IEnumerable<Item> ListarTodos()
+    {
+        return _repository.GetAll();
+    }
+
+    public IEnumerable<Item> BuscarPorNome(string termo)
+    {
+        return _repository.GetAll()
+            .Where(p => p.Nome.Contains(termo, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public void AplicarDescontoEmTodos(decimal percentual)
+    {
+        var produtos = _repository.GetAll();
+        foreach (var produto in produtos)
+        {
+            produto.AplicarDesconto(percentual);
+            _repository.Update(produto);
+        }
+    }
+
+    public void RemoverProduto(int id)
+    {
+        _repository.Delete(id);
+    }
+
+    public decimal CalcularValorTotalEstoque()
+    {
+        return _repository.GetAll()
+            .Sum(p => p.Preco * p.Estoque);
+    }
+}
+
 public class Program
 {
     public static void Main(string[] args)
@@ -414,7 +634,77 @@ public class Program
         //Console.Write($" - Subtotal.: {item2.CalcularSubtotal()}\n");
 
         #endregion
-        System.Console.ReadKey();
+        #region Repository Pattern - Sistema de Produtos
+        Console.WriteLine("=== SISTEMA DE PRODUTOS (Repository Pattern) ===\n");
+
+        // 1. Criar o repositório (in-memory)
+        IRepository<Item> repository = new InMemoryRepository<Item>();
+
+        // 2. Criar o serviço que usa o repositório
+        var produtoService = new ItemService(repository);
+
+        // 3. Popular com alguns dados iniciais
+        Console.WriteLine("📦 Cadastrando produtos iniciais...");
+        produtoService.CadastrarProduto("Notebook Dell", 4500.00m, 10);
+        produtoService.CadastrarProduto("Mouse Logitech", 150.00m, 50);
+        produtoService.CadastrarProduto("Teclado Mecânico", 350.00m, 30);
+        produtoService.CadastrarProduto("Monitor 24\"", 1200.00m, 15);
+
+        // 4. Listar todos os produtos
+        Console.WriteLine("\n📋 Lista de todos os produtos:");
+        foreach (var produto in produtoService.ListarTodos())
+        {
+            Console.WriteLine($"  {produto}");
+        }
+
+        // 5. Buscar um produto específico
+        Console.WriteLine("\n🔍 Buscando produto com ID 2:");
+        try
+        {
+            var produto = produtoService.BuscarPorId(2);
+            Console.WriteLine($"  Encontrado: {produto}");
+        }
+        catch (KeyNotFoundException ex)
+        {
+            Console.WriteLine($"  Erro: {ex.Message}");
+        }
+
+        // 6. Buscar por nome
+        Console.WriteLine("\n🔎 Buscando produtos com 'mouse':");
+        var produtosMouse = produtoService.BuscarPorNome("mouse");
+        foreach (var produto in produtosMouse)
+        {
+            Console.WriteLine($"  {produto}");
+        }
+
+        // 7. Aplicar desconto
+        Console.WriteLine("\n💰 Aplicando 10% de desconto em todos os produtos...");
+        produtoService.AplicarDescontoEmTodos(10);
+
+        // 8. Listar novamente para ver descontos
+        Console.WriteLine("\n📋 Produtos após desconto:");
+        foreach (var produto in produtoService.ListarTodos())
+        {
+            Console.WriteLine($"  {produto}");
+        }
+
+        // 9. Calcular valor total do estoque
+        decimal valorTotal = produtoService.CalcularValorTotalEstoque();
+        Console.WriteLine($"\n💵 Valor total em estoque: R${valorTotal:F2}");
+
+        // 10. Remover um produto
+        Console.WriteLine("\n🗑️ Removendo produto com ID 3...");
+        produtoService.RemoverProduto(3);
+
+        // 11. Contar produtos restantes
+        Console.WriteLine($"\n📊 Total de produtos no sistema: {repository.Count()}");
+
+        // 12. Verificar se um produto existe
+        Console.WriteLine($"\n❓ Produto com ID 1 existe? {repository.Exists(1)}");
+        Console.WriteLine($"❓ Produto com ID 99 existe? {repository.Exists(99)}");
+
+        #endregion
+        Console.ReadKey();
 
     }
 }
