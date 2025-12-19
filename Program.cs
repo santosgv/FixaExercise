@@ -287,8 +287,6 @@ public class Produto
 
 }
 
-
-// Interface genérica (T = Tipo/Classe que será gerenciada)
 public interface IRepository<T> where T : class
 {
     // Similar ao .create() do Django ORM
@@ -309,7 +307,6 @@ public interface IRepository<T> where T : class
     int Count();
 }
 
-// Classe base para todas as entidades (similar ao models.Model)
 public abstract class Entity
 {
     public int Id { get; protected set; } // Similar ao 'id' autoincrement do Django
@@ -336,7 +333,6 @@ public abstract class Entity
     }
 }
 
-// Similar a class Produto(models.Model) no Django
 public class Item : Entity
 {
     public string Nome { get; set; }
@@ -452,7 +448,6 @@ public class InMemoryRepository<T> : IRepository<T> where T : Entity
     }
 }
 
-// Camada de serviço que usa o repositório (similar a services no Django)
 public class ItemService
 {
     private readonly IRepository<Item> _repository;
@@ -505,6 +500,79 @@ public class ItemService
     {
         return _repository.GetAll()
             .Sum(p => p.Preco * p.Estoque);
+    }
+}
+
+public class InMemoryUserRepository
+{
+    private readonly List<User> _users = new List<User>();
+
+    public void Add(User user)
+    {
+        _users.Add(user);
+    }
+    public User GetByUsername(string username)
+    {
+        return _users.FirstOrDefault(u => u.Username == username);
+    }
+    public IEnumerable<User> GetAll()
+    {
+        return _users;
+    }
+}
+
+public class User
+{
+    public  string Username { get; set; }
+    public  string Email { get; set; }
+    public  string Password { get; set; }
+
+    public User(string username, string email, string password)
+    {
+        Username = username;
+        Email = email;
+        Password = password;
+    }
+}
+
+public class UserService
+{
+    private static List<User> _users = new List<User>();
+
+    public bool Cadastrar(string nome,string email, string senha)
+    {
+        if (string.IsNullOrWhiteSpace(nome) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(senha) )
+        {
+            Console.Write("Os campos nao podem ser vazios");
+            return false;
+        }
+
+        if (_users.Any(u => u.Email == email))
+        {
+            Console.Write("Email ja cadastrado");
+            return false;
+        }
+
+        string senhahash = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(senha));
+        Console.WriteLine($"O hash da senha e ={senhahash}");
+
+        var user = new User(nome,email,senhahash);
+
+        _users.Add(user);
+        return true;
+
+    }
+
+    public User Login( string email, string senha)
+    {
+        string senhahash = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(senha));
+        Console.WriteLine($"a senha e {senha} O hash da senha para login e ={senhahash}");
+        var user = _users.FirstOrDefault(u => u.Email == email && u.Password == senhahash);
+        return user;
+    }
+    public IEnumerable<User> GetAllUsers()
+    {
+        return _users;
     }
 }
 
@@ -661,74 +729,114 @@ public class Program
 
         #endregion
         #region Repository Pattern - Sistema de Produtos
-        Console.WriteLine("=== SISTEMA DE PRODUTOS (Repository Pattern) ===\n");
+        //Console.WriteLine("=== SISTEMA DE PRODUTOS (Repository Pattern) ===\n");
 
-        // 1. Criar o repositório (in-memory)
-        IRepository<Item> repository = new InMemoryRepository<Item>();
+        //// 1. Criar o repositório (in-memory)
+        //IRepository<Item> repository = new InMemoryRepository<Item>();
 
-        // 2. Criar o serviço que usa o repositório
-        var produtoService = new ItemService(repository);
+        //// 2. Criar o serviço que usa o repositório
+        //var produtoService = new ItemService(repository);
 
-        // 3. Popular com alguns dados iniciais
-        Console.WriteLine("📦 Cadastrando produtos iniciais...");
-        produtoService.CadastrarProduto("Notebook Dell", 4500.00m, 10);
-        produtoService.CadastrarProduto("Mouse Logitech", 150.00m, 50);
-        produtoService.CadastrarProduto("Teclado Mecânico", 350.00m, 30);
-        produtoService.CadastrarProduto("Monitor 24\"", 1200.00m, 15);
+        //// 3. Popular com alguns dados iniciais
+        //Console.WriteLine("📦 Cadastrando produtos iniciais...");
+        //produtoService.CadastrarProduto("Notebook Dell", 4500.00m, 10);
+        //produtoService.CadastrarProduto("Mouse Logitech", 150.00m, 50);
+        //produtoService.CadastrarProduto("Teclado Mecânico", 350.00m, 30);
+        //produtoService.CadastrarProduto("Monitor 24\"", 1200.00m, 15);
 
-        // 4. Listar todos os produtos
-        Console.WriteLine("\n📋 Lista de todos os produtos:");
-        foreach (var produto in produtoService.ListarTodos())
-        {
-            Console.WriteLine($"  {produto}");
-        }
+        //// 4. Listar todos os produtos
+        //Console.WriteLine("\n📋 Lista de todos os produtos:");
+        //foreach (var produto in produtoService.ListarTodos())
+        //{
+        //    Console.WriteLine($"  {produto}");
+        //}
 
-        // 5. Buscar um produto específico
-        Console.WriteLine("\n🔍 Buscando produto com ID 2:");
-        try
-        {
-            var produto = produtoService.BuscarPorId(2);
-            Console.WriteLine($"  Encontrado: {produto}");
-        }
-        catch (KeyNotFoundException ex)
-        {
-            Console.WriteLine($"  Erro: {ex.Message}");
-        }
+        //// 5. Buscar um produto específico
+        //Console.WriteLine("\n🔍 Buscando produto com ID 2:");
+        //try
+        //{
+        //    var produto = produtoService.BuscarPorId(2);
+        //    Console.WriteLine($"  Encontrado: {produto}");
+        //}
+        //catch (KeyNotFoundException ex)
+        //{
+        //    Console.WriteLine($"  Erro: {ex.Message}");
+        //}
 
-        // 6. Buscar por nome
-        Console.WriteLine("\n🔎 Buscando produtos com 'mouse':");
-        var produtosMouse = produtoService.BuscarPorNome("mouse");
-        foreach (var produto in produtosMouse)
-        {
-            Console.WriteLine($"  {produto}");
-        }
+        //// 6. Buscar por nome
+        //Console.WriteLine("\n🔎 Buscando produtos com 'mouse':");
+        //var produtosMouse = produtoService.BuscarPorNome("mouse");
+        //foreach (var produto in produtosMouse)
+        //{
+        //    Console.WriteLine($"  {produto}");
+        //}
 
-        // 7. Aplicar desconto
-        Console.WriteLine("\n💰 Aplicando 10% de desconto em todos os produtos...");
-        produtoService.AplicarDescontoEmTodos(10);
+        //// 7. Aplicar desconto
+        //Console.WriteLine("\n💰 Aplicando 10% de desconto em todos os produtos...");
+        //produtoService.AplicarDescontoEmTodos(10);
 
-        // 8. Listar novamente para ver descontos
-        Console.WriteLine("\n📋 Produtos após desconto:");
-        foreach (var produto in produtoService.ListarTodos())
-        {
-            Console.WriteLine($"  {produto}");
-        }
+        //// 8. Listar novamente para ver descontos
+        //Console.WriteLine("\n📋 Produtos após desconto:");
+        //foreach (var produto in produtoService.ListarTodos())
+        //{
+        //    Console.WriteLine($"  {produto}");
+        //}
 
-        // 9. Calcular valor total do estoque
-        decimal valorTotal = produtoService.CalcularValorTotalEstoque();
-        Console.WriteLine($"\n💵 Valor total em estoque: R${valorTotal:F2}");
+        //// 9. Calcular valor total do estoque
+        //decimal valorTotal = produtoService.CalcularValorTotalEstoque();
+        //Console.WriteLine($"\n💵 Valor total em estoque: R${valorTotal:F2}");
 
-        // 10. Remover um produto
-        Console.WriteLine("\n🗑️ Removendo produto com ID 3...");
-        produtoService.RemoverProduto(3);
+        //// 10. Remover um produto
+        //Console.WriteLine("\n🗑️ Removendo produto com ID 3...");
+        //produtoService.RemoverProduto(3);
 
-        // 11. Contar produtos restantes
-        Console.WriteLine($"\n📊 Total de produtos no sistema: {repository.Count()}");
+        //// 11. Contar produtos restantes
+        //Console.WriteLine($"\n📊 Total de produtos no sistema: {repository.Count()}");
 
-        // 12. Verificar se um produto existe
-        Console.WriteLine($"\n❓ Produto com ID 1 existe? {repository.Exists(1)}");
-        Console.WriteLine($"❓ Produto com ID 99 existe? {repository.Exists(99)}");
+        //// 12. Verificar se um produto existe
+        //Console.WriteLine($"\n❓ Produto com ID 1 existe? {repository.Exists(1)}");
+        //Console.WriteLine($"❓ Produto com ID 99 existe? {repository.Exists(99)}");
 
+        #endregion
+        #region Sistema de Usuarios - Cadastro e Login
+        //UserService userService = new UserService();
+
+        //Console.WriteLine("=== TESTE DO SISTEMA ===");
+
+        //// Teste 1: Cadastro
+        //Console.WriteLine("\n1. Cadastrando usuário...");
+        //bool cadastrado = userService.Cadastrar("João Silva", "joao@email.com", "123456");
+        //Console.WriteLine($"Cadastro: {(cadastrado ? "SUCESSO" : "FALHA")}");
+
+        //bool cadastrado2 = userService.Cadastrar("Maria Souza", "joao22@email.com", "12353234");
+        //bool cadastrado3 = userService.Cadastrar("Maria eduardo", "maria@email.com", "136554");
+
+
+        //// Teste 2: Login correto
+        //Console.WriteLine("\n2. Tentando login com credenciais corretas...");
+        //var user = userService.Login("joao@email.com", "123456");
+        //Console.WriteLine($"Login: {(user != null ? "SUCESSO" : "FALHA")}");
+
+        //// Teste 3: Login com senha errada
+        //Console.WriteLine("\n3. Tentando login com senha errada...");
+        //user = userService.Login("joao@email.com", "senhaerrada");
+        //Console.WriteLine($"Login: {(user != null ? "SUCESSO" : "FALHA")}");
+
+        //// Teste 5: Cadastro com email duplicado
+        //Console.WriteLine("\n5. Tentando cadastrar email duplicado...");
+        //cadastrado = userService.Cadastrar("Outro João", "joao@email.com", "654321");
+        //Console.WriteLine($"Cadastro: {(cadastrado ? "SUCESSO" : "FALHA")}");
+
+        //// Teste 6: Listar todos os usuários
+        //var allUsers = userService.GetAllUsers();
+        //Console.WriteLine("\nLista de todos os usuários cadastrados:");
+
+        //foreach (var u in allUsers)
+        //{
+        //    Console.WriteLine($"- Nome: {u.Username}, Email: {u.Email}");
+        //}
+
+        //Console.WriteLine("\n=== FIM DOS TESTES ===");
         #endregion
         Console.ReadKey();
 
